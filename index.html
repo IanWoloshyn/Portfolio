@@ -33,6 +33,7 @@
                 <li><a href="#projects" class="nav-link">Projects</a></li>
                 <li><a href="#skills" class="nav-link">Skills</a></li>
                 <li><a href="#community" class="nav-link">Community</a></li>
+                <li><a href="notes.html" class="nav-link">Notes</a></li>
                 <li><a href="#contact" class="nav-link nav-link-cta">Contact</a></li>
             </ul>
         </div>
@@ -46,13 +47,24 @@
             <div class="hero-content">
                 <h1 class="hero-title">Ian J. Woloshyn</h1>
                 <p class="hero-subtitle">Computer Engineering Student</p>
-                <p class="hero-tagline">Embedded Systems | Hardware/Software Integration | FPGA Design</p>
-                <a href="#projects" class="btn btn-primary">View Projects</a>
-                <div class="scroll-indicator">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
+                <p class="hero-tagline">Embedded Systems | Controls Engineering | Hardware/Software Integration | FPGA Design</p>
+                <div class="hero-cta">
+                    <a href="#projects" class="btn btn-primary">View Projects</a>
+                    <a href="assets/Ian_Woloshyn_Resume.docx" class="btn btn-secondary" download>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Resume
+                    </a>
                 </div>
+            </div>
+            <!-- Scroll indicator outside hero-content to avoid CSS transform containing-block bug -->
+            <div class="scroll-indicator">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
             </div>
         </section>
 
@@ -62,10 +74,10 @@
                 <h2 class="section-title">About Me</h2>
                 <div class="about-content">
                     <div class="about-text">
-                        <p class="body-large objective-text">Motivated Computer Engineering senior seeking an opportunity in hardware/software design</p>
-                        <p>I'm a Computer Engineering student at Rochester Institute of Technology (RIT), passionate about embedded systems and the intersection of hardware and software. With hands-on experience from internships at RS Automation and Johnson & Johnson, I've developed practical skills in PLC programming, HMI design, and automation systems.</p>
-                        <p>My work focuses on developing innovative solutions using microcontrollers, FPGAs, and real-time systems. I thrive on challenges that require deep technical understanding and creative problem-solving, particularly in embedded systems where efficiency and precision are paramount.</p>
-                        
+                        <p class="body-large objective-text">Computer Engineering senior at RIT with a focus on embedded systems, controls, and microelectronics.</p>
+                        <p>My academic work has centered on FPGA design, microcontrollers, and embedded software — building custom IP cores in VHDL, integrating Nios II processors via Avalon interfaces, writing bare-metal C drivers, and working with FreeRTOS on STM32 platforms. I've also studied digital signal processing, circuit analysis, and semiconductor device physics, with hands-on cleanroom experience in PMOS transistor fabrication.</p>
+                        <p>On the industry side, my internships at RS Automation and Johnson &amp; Johnson gave me practical experience in PLC programming, HMI design, and industrial automation systems. I'm drawn to work that sits at the intersection of hardware and software — whether that's embedded firmware, controls systems, or the microelectronics that make it all possible.</p>
+
                         <h3 class="subhead mt-lg">Education</h3>
                         <div class="education-item">
                             <div class="education-header">
@@ -264,64 +276,335 @@ END ARCHITECTURE rtl;</code></pre>
                             </div>
                             
                             <div class="code-content" id="ram-tb">
-<pre><code class="language-vhdl">-- Testbench validates all byte-enable combinations
-stim_proc: process
-begin
-    reset_n <= '0';
-    wait for 20 ns;
-    reset_n <= '1';
-    wait for 20 ns;
+<pre><code class="language-vhdl">-------------------------------------------------------------------------
+-- Ian Woloshyn
+-- CPET 561 Embedded System Design 1
+-- Lab 6 raminfr_be Testbench
+-- March 26th 2025
+-------------------------------------------------------------------------
 
-    -- Full Word test (all bytes enabled)
-    for i in 0 to 4095 loop
-        address <= std_logic_vector(to_unsigned(i, 12));
-        writebyteenable_n <= "0000";
-        writedata <= x"00000000";
-        wait for 20 ns;	
-        assert readdata = x"00000000" 
-            report "ERROR: Full Word mismatch at address " & integer'image(i);
-    end loop;
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE ieee.std_logic_unsigned.ALL;
+USE ieee.numeric_std.ALL;
 
-    -- Top Half Word test
-    for i in 0 to 4095 loop
-        address <= std_logic_vector(to_unsigned(i, 12));
-        writebyteenable_n <= "0011";  -- Enable top bytes
-        writedata <= x"11111111";
-        wait for 20 ns;
-        assert readdata = x"11110000" 
-            report "ERROR: Top Half Word mismatch";
-    end loop;
+ENTITY raminfr_be_tb IS
+END ENTITY raminfr_be_tb;
 
-    -- Individual byte tests for Bytes 0-3...
-    report "Simulation complete - 20,480+ operations validated";
-    wait;
-end process;</code></pre>
+ARCHITECTURE Behavioral OF raminfr_be_tb IS
+
+    COMPONENT raminfr IS
+    PORT(
+        clk               : IN  std_logic;
+        reset_n           : IN  std_logic;
+        writebyteenable_n : IN  std_logic_vector(3 DOWNTO 0);
+        address           : IN  std_logic_vector(11 DOWNTO 0);
+        writedata         : IN  std_logic_vector(31 DOWNTO 0);
+        readdata          : OUT std_logic_vector(31 DOWNTO 0)
+    );
+    END COMPONENT;
+
+    -- Signals
+    SIGNAL clk               : std_logic := '0';
+    SIGNAL reset_n           : std_logic := '0';
+    SIGNAL writebyteenable_n : std_logic_vector(3 DOWNTO 0) := "1111";
+    SIGNAL address           : std_logic_vector(11 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL writedata         : std_logic_vector(31 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL readdata          : std_logic_vector(31 DOWNTO 0);
+
+    CONSTANT CLK_PERIOD : time := 20 ns;
+
+BEGIN
+
+    -- UUT Instantiation
+    uut: raminfr PORT MAP (
+        clk               => clk,
+        reset_n           => reset_n,
+        writebyteenable_n => writebyteenable_n,
+        address           => address,
+        writedata         => writedata,
+        readdata          => readdata
+    );
+
+    -- 50 MHz clock
+    clk_proc: PROCESS
+    BEGIN
+        clk <= '0'; wait for CLK_PERIOD / 2;
+        clk <= '1'; wait for CLK_PERIOD / 2;
+    END PROCESS;
+
+    -- Stimulus
+    stim_proc: PROCESS
+    BEGIN
+        -- Reset
+        reset_n <= '0';
+        wait for 40 ns;
+        reset_n <= '1';
+        wait for 40 ns;
+
+        -- 1) Full Word test: writebyteenable_n = "0000" (all bytes enabled)
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0000";
+            writedata         <= x"DEADBEEF";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1111";  -- read only
+            wait for CLK_PERIOD;
+            assert readdata = x"DEADBEEF"
+                report "FAIL: Full Word @ addr " & integer'image(i)
+                severity ERROR;
+        END LOOP;
+        report "PASS: Full Word test (4096 addresses)";
+
+        -- 2) Top Half Word: writebyteenable_n = "0011" (bytes 3:2 enabled)
+        --    Pre-fill all with 0x00000000, then write top 2 bytes only
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0000";
+            writedata         <= x"00000000";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0011";
+            writedata         <= x"AAAAAAAA";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1111";
+            wait for CLK_PERIOD;
+            assert readdata = x"AAAA0000"
+                report "FAIL: Top Half Word @ addr " & integer'image(i)
+                severity ERROR;
+        END LOOP;
+        report "PASS: Top Half Word test (4096 addresses)";
+
+        -- 3) Bottom Half Word: writebyteenable_n = "1100" (bytes 1:0 enabled)
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0000";
+            writedata         <= x"00000000";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1100";
+            writedata         <= x"BBBBBBBB";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1111";
+            wait for CLK_PERIOD;
+            assert readdata = x"0000BBBB"
+                report "FAIL: Bottom Half Word @ addr " & integer'image(i)
+                severity ERROR;
+        END LOOP;
+        report "PASS: Bottom Half Word test (4096 addresses)";
+
+        -- 4) Individual Byte 0 (bits 7:0): writebyteenable_n = "1110"
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0000";
+            writedata         <= x"00000000";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1110";
+            writedata         <= x"CCCCCCCC";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1111";
+            wait for CLK_PERIOD;
+            assert readdata = x"000000CC"
+                report "FAIL: Byte 0 @ addr " & integer'image(i)
+                severity ERROR;
+        END LOOP;
+        report "PASS: Byte 0 test (4096 addresses)";
+
+        -- 5) Individual Byte 1 (bits 15:8): writebyteenable_n = "1101"
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0000";
+            writedata         <= x"00000000";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1101";
+            writedata         <= x"DDDDDDDD";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1111";
+            wait for CLK_PERIOD;
+            assert readdata = x"0000DD00"
+                report "FAIL: Byte 1 @ addr " & integer'image(i)
+                severity ERROR;
+        END LOOP;
+        report "PASS: Byte 1 test (4096 addresses)";
+
+        -- 6) Individual Byte 2 (bits 23:16): writebyteenable_n = "1011"
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0000";
+            writedata         <= x"00000000";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1011";
+            writedata         <= x"EEEEEEEE";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1111";
+            wait for CLK_PERIOD;
+            assert readdata = x"00EE0000"
+                report "FAIL: Byte 2 @ addr " & integer'image(i)
+                severity ERROR;
+        END LOOP;
+        report "PASS: Byte 2 test (4096 addresses)";
+
+        -- 7) Individual Byte 3 (bits 31:24): writebyteenable_n = "0111"
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0000";
+            writedata         <= x"00000000";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "0111";
+            writedata         <= x"FFFFFFFF";
+            wait for CLK_PERIOD;
+        END LOOP;
+        FOR i IN 0 TO 4095 LOOP
+            address           <= std_logic_vector(to_unsigned(i, 12));
+            writebyteenable_n <= "1111";
+            wait for CLK_PERIOD;
+            assert readdata = x"FF000000"
+                report "FAIL: Byte 3 @ addr " & integer'image(i)
+                severity ERROR;
+        END LOOP;
+        report "PASS: Byte 3 test (4096 addresses)";
+
+        report "ALL TESTS PASSED - 28,672 read/write operations validated";
+        wait;
+    END PROCESS;
+
+END ARCHITECTURE Behavioral;</code></pre>
                             </div>
 
                             <div class="code-content" id="ram-c">
-<pre><code class="language-c">// C Integration with Nios II
+<pre><code class="language-c">//-------------------------------------------------------------------------
+//-- Ian Woloshyn
+//-- CPET 561 Embedded System Design 1
+//-- Lab 6 Part 2 - Byte-Enable RAM C Integration
+//-- March 24th, 2025
+//-------------------------------------------------------------------------
+
 #include "io.h"
+#include &lt;stdio.h&gt;
 #include "system.h"
+#include "alt_types.h"
+#include "sys/alt_irq.h"
 
-volatile uint32 *ram_base = (uint32 *) RAMINFR_BE_0_BASE;
+typedef unsigned char   uint8;
+typedef unsigned short  uint16;
+typedef unsigned long   uint32;
 
-// Write to custom RAM
-void ram_write(uint32 address, uint32 data) {
-    *(ram_base + address) = data;
+volatile uint32 *leds    = (uint32 *) LEDS_BASE;
+volatile uint32 *buttons = (uint32 *) KEY1_BASE;
+volatile uint8   stop_test = 0;
+
+// ISR: KEY1 press stops the test
+void key_ISR(void* context) {
+    stop_test = 1;
+    *(buttons + 3) = 0xFF;  // Clear interrupts
 }
 
-// Read from custom RAM
-uint32 ram_read(uint32 address) {
-    return *(ram_base + address);
+// 8-bit byte-accessible RAM test
+void byte_accessible_ram_test(uint32 start_addr, uint32 num_bytes, uint8 test_data) {
+    uint8* addr = (uint8*) start_addr;
+    for (uint32 i = 0; i &lt; num_bytes &amp;&amp; !stop_test; i++) {
+        addr[i] = test_data;
+    }
+    for (uint32 i = 0; i &lt; num_bytes &amp;&amp; !stop_test; i++) {
+        if (addr[i] != test_data) {
+            *leds = 0xFF;  // Error: light all LEDs
+            return;
+        }
+    }
 }
 
-int main(void) {
-    // Test RAM operations
-    ram_write(0x000, 0xDEADBEEF);
-    uint32 data = ram_read(0x000);
-    
-    printf("RAM Test: Written 0xDEADBEEF, Read 0x%08X\n", data);
-    
+// 16-bit half-word accessible RAM test
+void word_accessible_ram_test(uint32 start_addr, uint32 num_words, uint16 test_data) {
+    uint16* addr = (uint16*) start_addr;
+    for (uint32 i = 0; i &lt; num_words &amp;&amp; !stop_test; i++) {
+        addr[i] = test_data;
+    }
+    for (uint32 i = 0; i &lt; num_words &amp;&amp; !stop_test; i++) {
+        if (addr[i] != test_data) {
+            *leds = 0xFF;
+            return;
+        }
+    }
+}
+
+// 32-bit word accessible RAM test
+void dword_accessible_ram_test(uint32 start_addr, uint32 num_dwords, uint32 test_data) {
+    uint32* addr = (uint32*) start_addr;
+    for (uint32 i = 0; i &lt; num_dwords &amp;&amp; !stop_test; i++) {
+        addr[i] = test_data;
+    }
+    for (uint32 i = 0; i &lt; num_dwords &amp;&amp; !stop_test; i++) {
+        if (addr[i] != test_data) {
+            *leds = 0xFF;
+            return;
+        }
+    }
+}
+
+int main() {
+    uint32 start_addr   = RAMINFR_BE_0_BASE;
+    uint32 num_dwords   = 4096;
+    uint32 num_words    = 8192;
+    uint32 num_bytes    = 16384;
+    uint32 test_data_32 = 0x12345678;
+    uint16 test_data_16 = 0xABCD;
+    uint8  test_data_8  = 0x7F;
+
+    alt_ic_isr_register(KEY_IRQ_INTERRUPT_CONTROLLER_ID, KEY_IRQ, key_ISR, NULL, NULL);
+
+    printf("Starting RAM Tests. Press KEY1 to stop.\n");
+
+    printf("Running 8-bit test...\n");
+    byte_accessible_ram_test(start_addr, num_bytes, test_data_8);
+
+    if (!stop_test) {
+        printf("Running 16-bit test...\n");
+        word_accessible_ram_test(start_addr, num_words, test_data_16);
+    }
+
+    if (!stop_test) {
+        printf("Running 32-bit test...\n");
+        dword_accessible_ram_test(start_addr, num_dwords, test_data_32);
+    }
+
+    printf("RAM Test Complete.\n");
+    *leds = stop_test ? 0xFF : 0x00;  // All LEDs on = stopped early
+
+    while (1);
     return 0;
 }</code></pre>
                             </div>
@@ -373,7 +656,17 @@ int main(void) {
                             </div>
 
                             <div class="code-content active" id="servo-vhdl">
-<pre><code class="language-vhdl">-- 4-State FSM for Servo Control
+<pre><code class="language-vhdl">-------------------------------------------------------------------------
+-- Ian Woloshyn
+-- CPET 561 Embedded System Design 1
+-- Lab 5
+-- March 5th 2025
+-------------------------------------------------------------------------
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
 entity lab5 is
     port (
         clk            : in  std_logic;
@@ -387,23 +680,40 @@ entity lab5 is
 end entity Lab5;
 
 architecture Behavioral of Lab5 is
-    constant SWEEP_LEFT   : std_logic_vector(1 downto 0) := "00";
-    constant SWEEP_RIGHT  : std_logic_vector(1 downto 0) := "01";
-    constant INT_LEFT     : std_logic_vector(1 downto 0) := "10";
-    constant INT_RIGHT    : std_logic_vector(1 downto 0) := "11";
+    -- State machine states
+    constant SWEEP_LEFT  : std_logic_vector(1 downto 0) := "00";
+    constant SWEEP_RIGHT : std_logic_vector(1 downto 0) := "01";
+    constant INT_LEFT    : std_logic_vector(1 downto 0) := "10";
+    constant INT_RIGHT   : std_logic_vector(1 downto 0) := "11";
 
-    signal state_reg      : std_logic_vector(1 downto 0);
-    signal period_counter : unsigned(19 downto 0);
-    signal angle_count    : unsigned(31 downto 0);
-    
+    signal state_reg     : std_logic_vector(1 downto 0);
+    signal state_next    : std_logic_vector(1 downto 0);
+    signal period_counter: unsigned(19 downto 0) := b"00000000000000000000";
+    signal angle_count   : unsigned(31 downto 0) := x"0000C350"; -- 50,000
+    signal min_angle_reg : unsigned(31 downto 0) := x"0000C350"; -- 50,000
+    signal max_angle_reg : unsigned(31 downto 0) := x"000186A0"; -- 100,000
+
+    constant ANGLE_STEP  : unsigned(31 downto 0) := x"000001F4"; -- 500
+
 begin
-    -- Next State Logic
-    next_state_proc: process(state_reg, angle_count, min_angle_reg, max_angle_reg)
+    -- State Register
+    state_reg_proc: process(clk, reset_n)
     begin
+        if reset_n = '0' then
+            state_reg <= SWEEP_RIGHT;
+        elsif rising_edge(clk) then
+            state_reg <= state_next;
+        end if;
+    end process;
+
+    -- Next State Logic
+    next_state_proc: process(state_reg, angle_count, min_angle_reg, max_angle_reg, write_enable)
+    begin
+        state_next <= state_reg; -- Default: hold state
         case state_reg is
             when SWEEP_RIGHT =>
                 if angle_count >= max_angle_reg then
-                    state_next <= INT_RIGHT;  -- Trigger interrupt
+                    state_next <= INT_RIGHT;
                 end if;
             when INT_RIGHT =>
                 if write_enable = '1' then
@@ -411,16 +721,84 @@ begin
                 end if;
             when SWEEP_LEFT =>
                 if angle_count <= min_angle_reg then
-                    state_next <= INT_LEFT;   -- Trigger interrupt
+                    state_next <= INT_LEFT;
                 end if;
             when INT_LEFT =>
                 if write_enable = '1' then
                     state_next <= SWEEP_RIGHT;
                 end if;
+            when others =>
+                state_next <= SWEEP_RIGHT;
         end case;
     end process;
 
-    -- PWM Generation
+    -- Register Logic: update min/max from Nios II writes
+    register_proc: process(clk, reset_n)
+    begin
+        if reset_n = '0' then
+            min_angle_reg <= x"0000C350";
+            max_angle_reg <= x"000186A0";
+        elsif rising_edge(clk) then
+            if write_enable = '1' then
+                if write_address = '0' then
+                    min_angle_reg <= unsigned(write_data);
+                else
+                    max_angle_reg <= unsigned(write_data);
+                end if;
+            end if;
+        end if;
+    end process;
+
+    -- 20ms Period Counter (1,000,000 cycles at 50 MHz)
+    period_counter_proc: process(clk, reset_n)
+    begin
+        if reset_n = '0' then
+            period_counter <= (others => '0');
+        elsif rising_edge(clk) then
+            if period_counter >= x"000F4240" then
+                period_counter <= (others => '0');
+            else
+                period_counter <= period_counter + 1;
+            end if;
+        end if;
+    end process;
+
+    -- Angle Counter: increments/decrements by ANGLE_STEP each 20ms period
+    angle_counter_proc: process(clk, reset_n)
+    begin
+        if reset_n = '0' then
+            angle_count <= min_angle_reg;
+        elsif rising_edge(clk) then
+            case state_reg is
+                when SWEEP_RIGHT =>
+                    if period_counter = 0 then
+                        angle_count <= angle_count + ANGLE_STEP;
+                    end if;
+                when SWEEP_LEFT =>
+                    if period_counter = 0 then
+                        angle_count <= angle_count - ANGLE_STEP;
+                    end if;
+                when others =>
+                    angle_count <= angle_count;
+            end case;
+        end if;
+    end process;
+
+    -- IRQ: assert when entering interrupt states
+    irq_proc: process(clk, reset_n)
+    begin
+        if reset_n = '0' then
+            irq_signal <= '0';
+        elsif rising_edge(clk) then
+            if state_reg = INT_LEFT or state_reg = INT_RIGHT then
+                irq_signal <= '1';
+            else
+                irq_signal <= '0';
+            end if;
+        end if;
+    end process;
+
+    -- PWM Output: high when period_counter < angle_count
     pwm_proc: process(clk, reset_n)
     begin
         if reset_n = '0' then
@@ -433,50 +811,104 @@ begin
             end if;
         end if;
     end process;
+
 end Behavioral;</code></pre>
                             </div>
 
                             <div class="code-content" id="servo-c">
-<pre><code class="language-c">// Interrupt Service Routines for Servo Control
+<pre><code class="language-c">//-------------------------------------------------------------------------
+//-- Ian Woloshyn
+//-- CPET 561 Embedded System Design 1
+//-- Lab 5 C
+//-- March 18th, 2025
+//-------------------------------------------------------------------------
+
+#include "io.h"
+#include &lt;stdio.h&gt;
+#include "system.h"
+#include "alt_types.h"
+#include "sys/alt_irq.h"
+
+typedef unsigned char   uint8;
+typedef unsigned short  uint16;
+typedef unsigned long   uint32;
+
 volatile uint32 min_angle = 46;
 volatile uint32 max_angle = 134;
-volatile uint8 update_display = 0;
+volatile uint8  update_display = 0;
 
+uint32 *hex5    = (uint32 *) HEX5_BASE;
+uint32 *hex4    = (uint32 *) HEX4_BASE;
+uint32 *hex2    = (uint32 *) HEX2_BASE;
+uint32 *hex1    = (uint32 *) HEX1_BASE;
+uint32 *hex0    = (uint32 *) HEX0_BASE;
+volatile uint32 *buttons = (uint32 *) PUSHBUTTONS_BASE;
+volatile uint32 *switches= (uint32 *) SWITCHES_BASE;
+uint32 *servo   = (uint32 *) SERVO_CONTROLLER_0_BASE;
+
+// 7-Segment Display map (0-9)
+const uint8 SEGMENT_MAP[10] = {
+    0x40, 0x79, 0x24, 0x30, 0x19,
+    0x12, 0x02, 0x78, 0x00, 0x10
+};
+
+// Convert angle (degrees) to PWM duty cycle count
+int angleToDuty(int duty) {
+    int count = duty * (50000/90) + 50000/2;
+    return count;
+}
+
+// Display a 3-digit value on 7-seg displays
+void display_angle(uint32 value, uint32 *hundreds, uint32 *tens, uint32 *ones) {
+    uint8 h = (value >= 100);
+    uint8 t = ((value / 10) % 10);
+    uint8 o = value % 10;
+    *ones = SEGMENT_MAP[o];
+    *tens = SEGMENT_MAP[t];
+    if (hundreds) *hundreds = SEGMENT_MAP[h];
+}
+
+// ISR: Pushbutton updates min/max angle from switch position
 void pushbutton_ISR(void* context) {
-    uint32 button_edge = (*buttons + 3);
+    uint32 button_edge = *(buttons + 3);
 
-    if (button_edge & 0x8) {    // KEY3: Set min angle
+    if (button_edge & 0x8) {    // KEY3: set min angle
         min_angle = *switches;
     }
-
-    if (button_edge & 0x4) {    // KEY2: Set max angle
+    if (button_edge & 0x4) {    // KEY2: set max angle
         max_angle = *switches;
     }
 
     update_display = 1;
-    *(buttons + 3) = 0x00;  // Clear interrupts
+    *(buttons + 3) = 0xFF;  // Clear edge-capture register
 }
 
+// ISR: Servo reached min/max — write new angles to IP core
 void servo_ISR(void* context) {
-    *(servo + 0) = angleToDooty(min_angle);   // Write min
-    *(servo + 1) = angleToDooty(max_angle);   // Write max
-}
-
-int angleToDooty(int dooty) {
-    int count = dooty * (50000/90) + 50000/2;
-    return count;
+    *(servo + 0) = angleToDuty(min_angle);
+    *(servo + 1) = angleToDuty(max_angle);
 }
 
 int main(void) {
     // Register ISRs
-    alt_ic_isr_register(PUSHBUTTONS_IRQ_INTERRUPT_CONTROLLER_ID, 
+    alt_ic_isr_register(PUSHBUTTONS_IRQ_INTERRUPT_CONTROLLER_ID,
                         PUSHBUTTONS_IRQ, pushbutton_ISR, 0, 0);
-    alt_ic_isr_register(SERVO_CONTROLLER_0_IRQ_INTERRUPT_CONTROLLER_ID, 
+    alt_ic_isr_register(SERVO_CONTROLLER_0_IRQ_INTERRUPT_CONTROLLER_ID,
                         SERVO_CONTROLLER_0_IRQ, servo_ISR, 0, 0);
 
-    // Enable interrupts
+    // Initialize servo with default angles
+    *(servo + 0) = angleToDuty(min_angle);
+    *(servo + 1) = angleToDuty(max_angle);
+
+    // Initialize displays
+    display_angle(min_angle, NULL, hex5, hex4);
+    display_angle(max_angle, hex2, hex1, hex0);
+
+    // Enable KEY3 and KEY2 interrupts, clear pending
+    *(buttons + 2) = 0x0;
     *(buttons + 2) |= 0x0C;
-    
+    *(buttons + 3)  = 0xFF;
+
     while (1) {
         if (update_display) {
             display_angle(min_angle, NULL, hex5, hex4);
@@ -498,26 +930,27 @@ int main(void) {
                         <p class="project-date">December 2024</p>
                     </div>
                     <p class="project-course">Course: Digital Signal Processing</p>
-                    <p class="project-description">Designed a complete system using MATLAB and Arduino to measure and analyze breathing rates with advanced noise filtering. Implemented real-time signal processing, frequency analysis, and an alarm system for detecting irregular breathing patterns. Features include FIR filter design, FFT analysis, and embedded microcontroller integration.</p>
-                    
+                    <p class="project-description">Built a real-time breathing rate detection system on Arduino interfaced with MATLAB. The signal chain runs through an FIR equalizer, then three parallel IIR filters (5th-order Chebyshev lowpass at 12 BPM, 6th-order bandpass 12–40 BPM, 8th-order highpass at 40 BPM). A running standard-deviation tracker on each band's output classifies breathing rate as low, normal, or high, and drives an audio alarm via a speaker.</p>
+
                     <div class="tech-stack">
-                        <span class="tech-badge">MATLAB</span>
                         <span class="tech-badge">Arduino</span>
-                        <span class="tech-badge">DSP</span>
-                        <span class="tech-badge">Real-Time Systems</span>
-                        <span class="tech-badge">Signal Processing</span>
-                        <span class="tech-badge">FIR Filters</span>
-                        <span class="tech-badge">FFT Analysis</span>
+                        <span class="tech-badge">MATLAB</span>
+                        <span class="tech-badge">IIR Filters</span>
+                        <span class="tech-badge">FIR Equalizer</span>
+                        <span class="tech-badge">Chebyshev</span>
+                        <span class="tech-badge">Real-Time DSP</span>
+                        <span class="tech-badge">Serial I/O</span>
                     </div>
 
                     <div class="project-details">
-                        <h4 class="feature-title">System Features</h4>
+                        <h4 class="feature-title">System Architecture</h4>
                         <ul class="feature-list">
-                            <li>Real-time breathing rate measurement and monitoring</li>
-                            <li>Advanced digital filtering for noise reduction</li>
-                            <li>FFT-based frequency domain analysis</li>
-                            <li>Abnormal breathing pattern detection with alarm system</li>
-                            <li>Arduino sensor interface with MATLAB data processing</li>
+                            <li>FIR equalizer pre-processes the ADC input to flatten the sensor frequency response</li>
+                            <li>Three parallel IIR filter banks: Chebyshev LPF (12 BPM), BPF (12–40 BPM), HPF (40 BPM)</li>
+                            <li>Running statistics (mean, variance, stdev) computed per band with periodic reset</li>
+                            <li>Alarm logic classifies rate as low / normal / high / undetermined and plays tones at 400 Hz, 1000 Hz, or 200 Hz</li>
+                            <li>MATLAB handshake over 115200 baud serial — Arduino reads test vectors from MATLAB, sends back 9-column data stream</li>
+                            <li>Dither averaging over 160 sub-samples for improved ADC resolution</li>
                         </ul>
                     </div>
                 </div>
@@ -928,7 +1361,7 @@ int main(void) {
                                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                             </svg>
                         </a>
-                        <a href="https://linkedin.com/in/ian-woloshyn" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                        <a href="https://www.linkedin.com/in/ian-woloshyn-266864262/" class="social-link" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                             </svg>
@@ -951,6 +1384,12 @@ int main(void) {
     <footer class="footer">
         <div class="container">
             <p>&copy; 2025 Ian J. Woloshyn. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="https://www.linkedin.com/in/ian-woloshyn-266864262/" class="footer-link" target="_blank" rel="noopener noreferrer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
+                    LinkedIn
+                </a>
+            </div>
         </div>
     </footer>
 
